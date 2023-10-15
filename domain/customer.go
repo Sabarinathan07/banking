@@ -9,6 +9,7 @@ type Customer struct{
 	Status string
 }
 
+//secondary port
 type CustomerRepository interface{
 	FindAll() ([]Customer,error)
 }
