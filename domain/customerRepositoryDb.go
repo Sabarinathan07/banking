@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"log" // You need to import the "log" package for logging.
 	"time"
+
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/sabarinathan07/banking/errs"
 )
 
 type CustomerRepositoryDb struct {
@@ -14,7 +16,7 @@ type CustomerRepositoryDb struct {
 func (d CustomerRepositoryDb) FindAll() ([]Customer, error) {
 	findAllSql := "SELECT customer_id, name, city, zipcode, date_of_birth, status FROM customers"
 	rows, err := d.client.Query(findAllSql)
-	if err != nil { 
+	if err != nil {
 		// Check for an error in Query
 		log.Println("Error while querying customer table " + err.Error())
 		return nil, err
@@ -32,6 +34,24 @@ func (d CustomerRepositoryDb) FindAll() ([]Customer, error) {
 		customers = append(customers, c)
 	}
 	return customers, nil
+}
+func (d CustomerRepositoryDb) ById(id string) (*Customer, *errs.AppError) {
+	customerSql := "SELECT customer_id, name, city, zipcode, date_of_birth, status FROM customers WHERE customer_id = ?"
+	row := d.client.QueryRow(customerSql, id)
+	var c Customer
+	err := row.Scan(&c.Id, &c.Name, &c.City, &c.ZipCode, &c.DateOfBirth, &c.Status) // Correct variable names.
+	if err != nil {
+		if err == sql.ErrNoRows{
+			return nil, errs.NewNotFoundError("customer not found")
+		}else{
+			log.Println("Error while scanning customer" + err.Error())
+			return nil, errs.NewUnexpectedError("unexpected database error")
+		}
+
+		
+	}
+
+	return &c, nil
 }
 
 func NewCustomerRepositoryDb() CustomerRepositoryDb {
